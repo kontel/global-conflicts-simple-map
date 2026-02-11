@@ -6,6 +6,29 @@ import ConflictPanel from './ConflictPanel';
 import ConflictList from './ConflictList';
 import 'leaflet/dist/leaflet.css';
 
+function InitialZoom() {
+  const map = useMap();
+  const hasZoomed = useRef(false);
+
+  useEffect(() => {
+    if (hasZoomed.current) return;
+    hasZoomed.current = true;
+
+    map.setView([20, 0], 2, { animate: false });
+
+    const timer = setTimeout(() => {
+      map.flyTo([20, 0], 3, {
+        duration: 2.5,
+        easeLinearity: 0.15,
+      });
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [map]);
+
+  return null;
+}
+
 function PulsingMarkers({
   onSelect,
   selectedId,
@@ -14,18 +37,19 @@ function PulsingMarkers({
   selectedId: string | null;
 }) {
   const map = useMap();
-  const [visible, setVisible] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(0);
 
   useEffect(() => {
-    const timer = setTimeout(() => setVisible(true), 300);
-    return () => clearTimeout(timer);
+    const baseDelay = 800;
+    const timers = conflicts.map((_, i) =>
+      setTimeout(() => setVisibleCount(i + 1), baseDelay + i * 80)
+    );
+    return () => timers.forEach(clearTimeout);
   }, []);
-
-  if (!visible) return null;
 
   return (
     <>
-      {conflicts.map((conflict, index) => {
+      {conflicts.slice(0, visibleCount).map((conflict) => {
         const baseRadius = 6 + conflict.intensity * 3;
         const isSelected = selectedId === conflict.id;
         const color = statusColors[conflict.status];
@@ -40,13 +64,14 @@ function PulsingMarkers({
               fillColor: color,
               fillOpacity: isSelected ? 0.9 : 0.6,
               weight: isSelected ? 3 : 2,
-              className: `conflict-marker pulse-marker pulse-delay-${index % 5}`,
+              className: 'conflict-marker pulse-marker',
             }}
             eventHandlers={{
               click: () => {
                 onSelect(conflict);
                 map.flyTo([conflict.lat, conflict.lng], 6, {
-                  duration: 1.5,
+                  duration: 2,
+                  easeLinearity: 0.1,
                 });
               },
             }}
@@ -58,7 +83,7 @@ function PulsingMarkers({
               permanent={false}
             >
               <div className="tooltip-content">
-                <span className="tooltip-status\" style={{ background: color }} />
+                <span className="tooltip-status" style={{ background: color }} />
                 <strong>{conflict.name}</strong>
                 <span className="tooltip-type">{conflict.type}</span>
               </div>
@@ -76,7 +101,8 @@ function MapController({ selectedConflict }: { selectedConflict: Conflict | null
   useEffect(() => {
     if (selectedConflict) {
       map.flyTo([selectedConflict.lat, selectedConflict.lng], 6, {
-        duration: 1.5,
+        duration: 2,
+        easeLinearity: 0.1,
       });
     }
   }, [selectedConflict, map]);
@@ -212,22 +238,30 @@ export default function ConflictMap() {
       {!showList && (
         <MapContainer
           center={[20, 0]}
-          zoom={3}
+          zoom={2}
           minZoom={2}
           maxZoom={10}
           className="leaflet-map"
           zoomControl={false}
           ref={mapRef}
           worldCopyJump={true}
+          zoomAnimation={true}
+          zoomAnimationThreshold={4}
+          fadeAnimation={true}
+          markerZoomAnimation={true}
         >
           <TileLayer
             attribution='&copy; <a href="https://carto.com/">CARTO</a>'
             url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
+            keepBuffer={6}
           />
           <TileLayer
             url="https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png"
-            pane="shadowPane"
+            pane="overlayPane"
+            keepBuffer={6}
+            className="label-tile-layer"
           />
+          <InitialZoom />
           <PulsingMarkers onSelect={handleSelect} selectedId={selectedConflict?.id ?? null} />
           <MapController selectedConflict={selectedConflict} />
         </MapContainer>

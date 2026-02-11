@@ -388,6 +388,27 @@
   background: var(--bg-primary) !important;
 }
 
+/* Smooth tile fade-in when loading */
+.leaflet-tile-container img {
+  transition: opacity 0.4s ease-in-out !important;
+}
+
+/* Smooth zoom animation on the tile pane */
+.leaflet-zoom-anim .leaflet-zoom-animated {
+  transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) !important;
+}
+
+/* Label layer: render above markers, smooth opacity */
+.label-tile-layer {
+  opacity: 0.85;
+  transition: opacity 0.3s ease;
+}
+
+/* Keep labels crisp and non-interactive */
+.leaflet-overlay-pane .label-tile-layer {
+  pointer-events: none;
+}
+
 .leaflet-control-attribution {
   background: rgba(10, 14, 23, 0.8) !important;
   color: var(--text-muted) !important;
@@ -410,11 +431,10 @@
   animation: pulse 2s ease-in-out infinite;
 }
 
-.pulse-delay-0 { animation-delay: 0s; }
-.pulse-delay-1 { animation-delay: 0.4s; }
-.pulse-delay-2 { animation-delay: 0.8s; }
-.pulse-delay-3 { animation-delay: 1.2s; }
-.pulse-delay-4 { animation-delay: 1.6s; }
+/* Smooth SVG path transitions for marker resize on select */
+.leaflet-interactive {
+  transition: stroke-width 0.3s ease, fill-opacity 0.3s ease;
+}
 
 /* Tooltip */
 .conflict-tooltip {
